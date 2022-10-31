@@ -1,18 +1,24 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
+import { developmentChains, networkConfig } from "../helper-hardhat-config";
+import { verify } from "../utils/verify";
 
 const main = async () => {
-  const contractFactory = await ethers.getContractFactory("Contract"); // Enter contract name
-  const contract = await contractFactory.deploy(); // Enter contract name
+    const [deployer] = await ethers.getSigners();
 
-  await contract.deployed(); // Enter contract name
+    const basicNft = await (await ethers.getContractFactory("BasicNft")).deploy();
 
-  
-  console.log(`Contract deployed to ${contract.address}`); // Enter contract name
-} 
+    await basicNft.deployed();
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
+    console.log(`Contract deployed to ${basicNft.address}`);
+
+    if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
+        await basicNft.deployTransaction.wait(networkConfig[network.name].blockConfirmations);
+
+        await verify(basicNft.address, []);
+    }
+};
+
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+    console.error(error);
+    process.exitCode = 1;
 });
